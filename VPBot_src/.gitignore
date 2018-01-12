@@ -1,0 +1,7 @@
+build/
+bin/
+.vscode/
+.project
+/Win32
+/x64/
+/x86/

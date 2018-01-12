@@ -1,0 +1,17 @@
+{
+    "vp": {
+        "auth": {
+            "username": "VP Username",
+            "password": "VP Password"
+        },
+    
+        "bot": {
+            "name": "VP Discord Services",
+            "world": "Blizzard"
+        }
+    },
+
+    "discord": {
+        "token": "Discord Bot API Token"
+    }
+}
