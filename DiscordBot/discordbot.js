@@ -63,6 +63,16 @@ client.on('message', message => {
         if (message.content.length > 250) {
             message.content = message.content.substring(0, 250);
         }
+
+        //lolno
+        message.content.replace(/@here/g, "here");
+        message.content.replace(/@everyone/g, "everyone");
+        message.content.replace(/\<@[0-9]+\>/g, "");
+        message.content.replace(/\<@&[0-9]+\>/g, "");
+        message.content.replace(/\<#[0-9]+\>/g, "");
+        message.content.replace(/\<@![0-9]+\>/g, "");
+        message.content.replace(/\<:[^:]+[0-9]+:\>/g, "");
+
         let msg_to_send = { "name": message.author.username, "message": message.content };
         ws_client.send(JSON.stringify(msg_to_send));
     }
@@ -96,15 +106,6 @@ wss.on('connection', function connection(ws) {
     ws.on('message', function incoming(message){
         console.log("From VP: " + message);
 
-        //lolno
-        message.content.replace(/@here/g, "here");
-        message.content.replace(/@everyone/g, "everyone");
-        message.content.replace(/\<@[0-9]+\>/g, "");
-        message.content.replace(/\<@&[0-9]+\>/g, "");
-        message.content.replace(/\<#[0-9]+\>/g, "");
-        message.content.replace(/\<@![0-9]+\>/g, "");
-        message.content.replace(/\<:[^:]+[0-9]+:\>/g, "");
-
         if (webhook == undefined) {
             return;
         }
@@ -116,6 +117,16 @@ wss.on('connection', function connection(ws) {
             console.log("Skipping bad mesg");
             return;
         }
+
+        //lolno
+        msg_decoded.message.replace(/@here/g, "here");
+        msg_decoded.message.replace(/@everyone/g, "everyone");
+        msg_decoded.message.replace(/\<@[0-9]+\>/g, "");
+        msg_decoded.message.replace(/\<@&[0-9]+\>/g, "");
+        msg_decoded.message.replace(/\<#[0-9]+\>/g, "");
+        msg_decoded.message.replace(/\<@![0-9]+\>/g, "");
+        msg_decoded.message.replace(/\<:[^:]+[0-9]+:\>/g, "");
+        
         webhook.edit(msg_decoded.name, "https://i.imgur.com/a2KuqGe.png")
                .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
     });
