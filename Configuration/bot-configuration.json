@@ -6,12 +6,14 @@
         },
     
         "bot": {
-            "name": "VP Discord Services",
+            "name": "VP-Discord",
             "world": "Blizzard"
         }
     },
 
     "discord": {
-        "token": "Discord Bot API Token"
+        "token": "Discord Bot Token",
+        "webhook_id": "Discord Guild Webhook ID",
+        "guild_id": "Discord Guild ID"
     }
 }

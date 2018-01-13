@@ -2,6 +2,8 @@
 #include <sstream>
 #include <mutex>
 #include <thread>
+#include <chrono>
+#include <atomic>
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -13,6 +15,8 @@
 using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
 
+using namespace std::chrono;
+
 #include <VPSDK/VP.h>
 
 #include "botsettings.hpp"
@@ -20,21 +24,57 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
 using namespace std;
 
 void event_avatar_add(VPInstance sdk);
+void event_avatar_delete(VPInstance sdk);
 void event_chat(VPInstance sdk);
+
+struct websocket_client;
+
+websocket_client * client = nullptr;
+bool is_steady = false;
+system_clock::time_point started;
 
 struct websocket_client {
     boost::asio::io_context ioc;
     tcp::resolver resolver;
     websocket::stream<tcp::socket> ws;
 	std::mutex read_mtx;
+	std::mutex reconnect_mtx;
+	vpdiscordbot::Settings * settings;
+	std::atomic_bool isAlive;
 
 	std::vector<vpdiscordbot::Message> messages_to_send;
 
 	bool shouldContinue = true;
 	bool connected = true;
 
-	websocket_client() : ioc{}, resolver{ ioc }, ws{ ioc }, messages_to_send{} {
-        auto const results = resolver.resolve("localhost", "7414");
+	websocket_client() : ioc{}, resolver{ ioc }, ws{ ioc }, messages_to_send{}, isAlive{ true } {
+		connect();
+    }
+
+	void close() {
+		if (connected) {
+			try {
+				ws.close(websocket::close_code::normal);
+			}
+			catch (std::exception&) {}
+
+			ws = websocket::stream<tcp::socket>{ ioc };
+			
+			connected = false;
+		}
+	}
+
+	void reconnect() {
+		if (reconnect_mtx.try_lock()) {
+			close();
+			cout << "Error. Lost connection. Reconnecting..." << endl;
+			connect();
+			reconnect_mtx.unlock();
+		}
+	}
+
+	void connect() {
+		auto const results = resolver.resolve("localhost", "7414");
 		bool connected = false;
 		bool upgraded = false;
 
@@ -43,7 +83,7 @@ struct websocket_client {
 				boost::asio::connect(ws.next_layer(), results.begin(), results.end());
 				connected = true;
 			}
-			catch (std::exception& error) {}
+			catch (std::exception&) {}
 		}
 
 		while (!upgraded) {
@@ -57,13 +97,6 @@ struct websocket_client {
 				upgraded = true;
 			}
 		}
-    }
-
-	void close() {
-		if (connected) {
-			ws.close(websocket::close_code::normal);
-			connected = false;
-		}
 	}
 
     ~websocket_client() {
@@ -73,13 +106,18 @@ struct websocket_client {
     }
 };
 
-websocket_client * client = nullptr;
-
 static void websocket_service() {
 	while (client->shouldContinue) {
 		// Parse websocket messages
 		boost::beast::multi_buffer buffer;
-		client->ws.read(buffer);
+
+		try {
+			client->ws.read(buffer);
+		}
+		catch (std::exception&) {
+			client->reconnect();
+			continue;
+		}
 
 		cout << "From Discord: " << boost::beast::buffers(buffer.data()) << endl;
 		std::stringstream ss;
@@ -98,6 +136,15 @@ static void websocket_service() {
 	}
 }
 
+static void write_message(std::string msg) {
+	try {
+		client->ws.write(boost::asio::buffer(msg));
+	}
+	catch (std::exception&) {
+		client->reconnect();
+	}
+}
+
 int main(int argc, char ** argv)
 {
     vpdiscordbot::Settings settings;
@@ -107,14 +154,14 @@ int main(int argc, char ** argv)
 
 	thread ws_service(websocket_service);
 
-	vpdiscordbot::GetMessageFromJson("{\"name\":\"Bob\",\"message\":\"Test!\"}");
-
     try {
         settings = vpdiscordbot::GetSettingsFromFile("../../Configuration/bot-configuration.json");
     } catch (exception& err) {
         cerr << "ERROR: " << err.what() << endl;
         return -1;
     }
+
+	websocket.settings = &settings;
 
     int err = 0;
     VPInstance sdk;
@@ -149,12 +196,23 @@ int main(int argc, char ** argv)
         cout << "Entered world..." << endl;
     }
 
+	started = system_clock::now();
     vp_event_set(sdk, VP_EVENT_AVATAR_ADD, event_avatar_add);
+	vp_event_set(sdk, VP_EVENT_AVATAR_DELETE, event_avatar_delete);
 	vp_event_set(sdk, VP_EVENT_CHAT, event_chat);
     vp_state_change(sdk);
 
+	int frame_counter = 0;
+
     while (vp_wait(sdk, 100) == 0) {
+		std::this_thread::sleep_for(milliseconds(50));
 		std::lock_guard<std::mutex> lock{ websocket.read_mtx };
+
+		if (++frame_counter > 300 && client->connected) {
+			client->ws.pong(""); // Notify the server to say we're still alive.
+			frame_counter = 0;
+		}
+
 		for (auto message : websocket.messages_to_send) {
 			vp_console_message(sdk, 0, message.name.c_str(), message.message.c_str(), 0, 0, 0, 0);
 		}
@@ -169,11 +227,29 @@ int main(int argc, char ** argv)
 
 void event_avatar_add(VPInstance sdk)
 {
-    stringstream ss;
     std::string name(vp_string(sdk, VP_AVATAR_NAME));
-	ss << "{ \"name\" : \"" << name << "\", \"message\": \"joined #blizzard.\" }";
+
+	if (!is_steady && duration_cast<seconds>(system_clock::now() - started).count() > 5) {
+		cout << "Now Steady." << endl;
+		is_steady = true;
+	} else if (!is_steady) {
+		cout << "User Joined: " << name << endl;
+		return;
+	}
+
+    stringstream ss;
+	ss << "{ \"name\" : \"" << name << "\", \"message\": \"**Has joined " << client->settings->bot.world << ".**\" }";
 	cout << ss.str() << endl;
-    client->ws.write(boost::asio::buffer(ss.str()));
+	write_message(ss.str());
+}
+
+void event_avatar_delete(VPInstance sdk)
+{
+	std::string name(vp_string(sdk, VP_AVATAR_NAME));
+	stringstream ss;
+	ss << "{ \"name\" : \"" << name << "\", \"message\": \"**Has left " << client->settings->bot.world << ".**\" }";
+	cout << ss.str() << endl;
+	write_message(ss.str());
 }
 
 void event_chat(VPInstance sdk)
@@ -186,7 +262,7 @@ void event_chat(VPInstance sdk)
 		return; // Ignore discord messages.
 	}
 
-	ss << "{ \"name\" : \"" << name << "\", \"message\": \"" << message << "\" }";
+	ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"" << message << "\" }";
 	cout << ss.str() << endl;
-	client->ws.write(boost::asio::buffer(ss.str()));
+	write_message(ss.str());
 }
