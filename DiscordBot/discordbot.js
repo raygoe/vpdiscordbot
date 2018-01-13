@@ -65,13 +65,13 @@ client.on('message', message => {
         }
 
         //lolno
-        message.content.replace(/@here/g, "here");
-        message.content.replace(/@everyone/g, "everyone");
-        message.content.replace(/\<@[0-9]+\>/g, "");
-        message.content.replace(/\<@&[0-9]+\>/g, "");
-        message.content.replace(/\<#[0-9]+\>/g, "");
-        message.content.replace(/\<@![0-9]+\>/g, "");
-        message.content.replace(/\<:[^:]+[0-9]+:\>/g, "");
+        message.content = message.content.replace(/@here/g, "here");
+        message.content = message.content.replace(/@everyone/g, "everyone");
+        message.content = message.content.replace(/\<@[0-9]+\>/g, "");
+        message.content = message.content.replace(/\<@&[0-9]+\>/g, "");
+        message.content = message.content.replace(/\<#[0-9]+\>/g, "");
+        message.content = message.content.replace(/\<@![0-9]+\>/g, "");
+        message.content = message.content.replace(/\<:[^:]+[0-9]+:\>/g, "");
 
         let msg_to_send = { "name": message.author.username, "message": message.content };
         ws_client.send(JSON.stringify(msg_to_send));
@@ -119,13 +119,13 @@ wss.on('connection', function connection(ws) {
         }
 
         //lolno
-        msg_decoded.message.replace(/@here/g, "here");
-        msg_decoded.message.replace(/@everyone/g, "everyone");
-        msg_decoded.message.replace(/\<@[0-9]+\>/g, "");
-        msg_decoded.message.replace(/\<@&[0-9]+\>/g, "");
-        msg_decoded.message.replace(/\<#[0-9]+\>/g, "");
-        msg_decoded.message.replace(/\<@![0-9]+\>/g, "");
-        msg_decoded.message.replace(/\<:[^:]+[0-9]+:\>/g, "");
+        msg_decoded.message = msg_decoded.message.replace(/@here/g, "here");
+        msg_decoded.message = msg_decoded.message.replace(/@everyone/g, "everyone");
+        msg_decoded.message = msg_decoded.message.replace(/\<@[0-9]+\>/g, "");
+        msg_decoded.message = msg_decoded.message.replace(/\<@&[0-9]+\>/g, "");
+        msg_decoded.message = msg_decoded.message.replace(/\<#[0-9]+\>/g, "");
+        msg_decoded.message = msg_decoded.message.replace(/\<@![0-9]+\>/g, "");
+        msg_decoded.message = msg_decoded.message.replace(/\<:[^:]+[0-9]+:\>/g, "");
         
         webhook.edit(msg_decoded.name, "https://i.imgur.com/a2KuqGe.png")
                .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
