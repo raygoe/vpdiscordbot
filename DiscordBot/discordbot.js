@@ -67,6 +67,7 @@ client.on('message', message => {
         //lolno
         message.content = message.content.replace(/^@[^ ]+/, "");
         message.content = message.content.replace(/\ @[^ ]+/g, "");
+        message.author.username = "[" + message.author.username + "]";
 
         let msg_to_send = { "name": message.author.username, "message": message.content };
         ws_client.send(JSON.stringify(msg_to_send));
