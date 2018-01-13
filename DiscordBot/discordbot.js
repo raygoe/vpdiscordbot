@@ -96,6 +96,15 @@ wss.on('connection', function connection(ws) {
     ws.on('message', function incoming(message){
         console.log("From VP: " + message);
 
+        //lolno
+        message.content.replace(/@here/g, "here");
+        message.content.replace(/@everyone/g, "everyone");
+        message.content.replace(/\<@[0-9]+\>/g, "");
+        message.content.replace(/\<@&[0-9]+\>/g, "");
+        message.content.replace(/\<#[0-9]+\>/g, "");
+        message.content.replace(/\<@![0-9]+\>/g, "");
+        message.content.replace(/\<:[^:]+[0-9]+:\>/g, "");
+
         if (webhook == undefined) {
             return;
         }
