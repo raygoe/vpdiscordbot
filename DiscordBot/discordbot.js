@@ -59,6 +59,7 @@ client.on('ready', () => {
 
 client.on('message', message => {
     console.log(message.content);
+    let username = message.author.username;
     if (ws_client != undefined && !message.author.bot && channel_id == message.channel.id) {
         if (message.content.length > 250) {
             message.content = message.content.substring(0, 250);
@@ -67,9 +68,9 @@ client.on('message', message => {
         //lolno
         message.content = message.content.replace(/^@[^ ]+/, "");
         message.content = message.content.replace(/\ @[^ ]+/g, "");
-        message.author.username = "[d-" + message.author.username + "]";
+        username = "[d-" + username + "]";
 
-        let msg_to_send = { "name": message.author.username, "message": message.content };
+        let msg_to_send = { "name": username, "message": message.content };
         ws_client.send(JSON.stringify(msg_to_send));
     }
 });
