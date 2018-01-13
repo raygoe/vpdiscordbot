@@ -66,8 +66,7 @@ client.on('message', message => {
         }
 
         //lolno
-        message.content = message.content.replace(/^@[^ ]+/, "");
-        message.content = message.content.replace(/\ @[^ ]+/g, "");
+        message.content = message.content.replace(/@[^ ]+/g, "");
         username = "[d-" + username + "]";
 
         let msg_to_send = { "name": username, "message": message.content };
@@ -116,8 +115,7 @@ wss.on('connection', function connection(ws) {
         }
 
         //lolno
-        msg_decoded.message = msg_decoded.message.replace(/^@[^ ]+/, "");
-        msg_decoded.message = msg_decoded.message.replace(/\ @[^ ]+/g, "");
+        msg_decoded.message = msg_decoded.message.replace(/@[^ ]+/g, "");
         
         webhook.edit(msg_decoded.name, "https://i.imgur.com/a2KuqGe.png")
                .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
