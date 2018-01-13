@@ -202,16 +202,9 @@ int main(int argc, char ** argv)
 	vp_event_set(sdk, VP_EVENT_CHAT, event_chat);
     vp_state_change(sdk);
 
-	int frame_counter = 0;
-
     while (vp_wait(sdk, 100) == 0) {
 		std::this_thread::sleep_for(milliseconds(50));
 		std::lock_guard<std::mutex> lock{ websocket.read_mtx };
-
-		if (++frame_counter > 300 && client->connected) {
-			client->ws.pong(""); // Notify the server to say we're still alive.
-			frame_counter = 0;
-		}
 
 		for (auto message : websocket.messages_to_send) {
 			vp_console_message(sdk, 0, message.name.c_str(), message.message.c_str(), 0, 0, 0, 0);

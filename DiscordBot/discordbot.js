@@ -77,6 +77,12 @@ client.on('error', err => {
     client.login(token);
 });
 
+function heartbeat() {
+    console.log("[WS] +PONG. :: " + this.isAlive);
+    this.isAlive = true;
+    console.log("[WS] -PONG. :: " + this.isAlive);
+}
+
 wss.on('connection', function connection(ws) {
     ws_client = ws;
     console.log("Connected with C++ API...");
@@ -85,9 +91,7 @@ wss.on('connection', function connection(ws) {
 
     ws.send("connected");
 
-    ws.on('pong', ws => {
-        ws.isAlive = true;
-    });
+    ws.on('pong', heartbeat);
 
     ws.on('message', function incoming(message){
         console.log("From VP: " + message);
@@ -110,6 +114,7 @@ wss.on('connection', function connection(ws) {
 
 const interval = setInterval(() => {
     wss.clients.forEach(ws => {
+        console.log("[WS] +PING. :: " + ws.isAlive);
         if (ws.isAlive === false) {
             // Now to terminate them.
             console.log("Lost connection to C++ API...!");
@@ -120,5 +125,6 @@ const interval = setInterval(() => {
 
         ws.isAlive = false;
         ws.ping(() => {});
+        console.log("[WS] -PING. :: " + ws.isAlive);
     });
 }, 30000);
