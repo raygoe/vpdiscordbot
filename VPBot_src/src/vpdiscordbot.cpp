@@ -127,9 +127,6 @@ static void websocket_service() {
         if (message.Malformed) {
             cout << "Malformed message. Skipping..." << endl;
         } else {
-			std::stringstream ss;
-			ss << "d-" << message.name;
-			message.name = ss.str();
 			std::lock_guard<std::mutex> lock{client->read_mtx};
 			client->messages_to_send.push_back(message);
         }
@@ -251,7 +248,7 @@ void event_chat(VPInstance sdk)
 	std::string name(vp_string(sdk, VP_AVATAR_NAME));
 	std::string message(vp_string(sdk, VP_CHAT_MESSAGE));
 
-	if (name.substr(0, 2) == std::string("d-")) {
+	if (name.substr(0, 3) == std::string("[d-")) {
 		return; // Ignore discord messages.
 	}
 
