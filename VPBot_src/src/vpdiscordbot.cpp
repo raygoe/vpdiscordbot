@@ -135,13 +135,18 @@ static void websocket_service() {
             if (message.message.substr(0, 7) == std::string("!online")) {
                 // List the online users.
                 ss.str("");
-                std::stringstream ss2;
+                std::stringstream ss2, ss3;
                 ss << "**Online users currently in " << client->settings->bot.world << "**\\n";
                 std::lock_guard<std::mutex> lock{liu_mtx};
                 int count_norm = 0;
                 int count_bots = 0;
+                int count_irc = 0;
                 for ( auto p : logged_in_users ) {
-                    if (p.second.substr(0, 1) == std::string("[")) {
+                    if (p.second.substr(0, 4) == std::string("[irc")) {
+                        // Is an IRC bot
+                        count_irc++;
+                        ss3 << p.second << ", ";
+                    } else if (p.second.substr(0, 1) == std::string("[")) {
                         // Is a bot
                         count_norm++;
                         ss2 << p.second << ", ";
@@ -153,14 +158,18 @@ static void websocket_service() {
                 }
                 std::string online_msg = ss.str();
                 std::string bot_online_msg = ss2.str();
+                std::string irc_online_msg = ss3.str();
                 if (count_norm > 0)
                     online_msg = online_msg.substr(0, online_msg.length() - 2);
 
                 if (count_bots > 0)
                     bot_online_msg = bot_online_msg.substr(0, bot_online_msg.length() - 2);
 
+                if (count_irc > 0)
+                    irc_online_msg = irc_online_msg.substr(0, irc_online_msg.length() - 2);
+
                 ss.str("");
-                ss << "{ \"name\" : \"The Bridge\", \"message\": \"" << online_msg << "\\n\\n**Bots Online**\\n" << bot_online_msg << "\" }";
+                ss << "{ \"name\" : \"The Bridge\", \"message\": \"" << online_msg << "\\n\\n**Bots Online**\\n" << bot_online_msg << "\\n\\n**IRC Bots Online**\\n" << irc_online_msg << "\" }";
                 cout << ss.str() << endl;
                 write_message(ss.str());
             }
