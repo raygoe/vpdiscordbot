@@ -135,19 +135,32 @@ static void websocket_service() {
             if (message.message.substr(0, 7) == std::string("!online")) {
                 // List the online users.
                 ss.str("");
+                std::stringstream ss2;
                 ss << "Online users currently in " << client->settings->bot.world << ": ";
                 std::lock_guard<std::mutex> lock{liu_mtx};
-                int count = 0;
+                int count_norm = 0;
+                int count_bots = 0;
                 for ( auto p : logged_in_users ) {
-                    count++;
-                    // Add the users to a list.
-                    ss << p.second << ", ";
+                    if (p.second.substr(0, 1) == std::string("[")) {
+                        // Is a bot
+                        count_norm++;
+                        ss2 << p.second << ", ";
+                    } else {
+                        // Is a user
+                        count_bots++;
+                        ss << p.second << ", ";
+                    }
                 }
                 std::string online_msg = ss.str();
-                if (count > 0)
+                std::string bot_online_msg = ss2.str();
+                if (count_norm > 0)
                     online_msg = online_msg.substr(0, online_msg.length() - 2);
+
+                if (count_bots > 0)
+                    bot_online_msg = bot_online_msg.substr(0, bot_online_msg.length() - 2);
+
                 ss.str("");
-                ss << "{ \"name\" : \"The Bridge\", \"message\": \"" << online_msg << "\" }";
+                ss << "{ \"name\" : \"The Bridge\", \"message\": \"" << online_msg << "\\n\\nBots Online: " << bot_online_msg << "\" }";
                 cout << ss.str() << endl;
                 write_message(ss.str());
             }
