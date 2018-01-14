@@ -136,7 +136,7 @@ static void websocket_service() {
                 // List the online users.
                 ss.str("");
                 std::stringstream ss2;
-                ss << "Online users currently in " << client->settings->bot.world << ": ";
+                ss << "**Online users currently in " << client->settings->bot.world << "**\\n";
                 std::lock_guard<std::mutex> lock{liu_mtx};
                 int count_norm = 0;
                 int count_bots = 0;
@@ -160,7 +160,7 @@ static void websocket_service() {
                     bot_online_msg = bot_online_msg.substr(0, bot_online_msg.length() - 2);
 
                 ss.str("");
-                ss << "{ \"name\" : \"The Bridge\", \"message\": \"" << online_msg << "\\n\\nBots Online: " << bot_online_msg << "\" }";
+                ss << "{ \"name\" : \"The Bridge\", \"message\": \"" << online_msg << "\\n\\n**Bots Online**\\n" << bot_online_msg << "\" }";
                 cout << ss.str() << endl;
                 write_message(ss.str());
             }
