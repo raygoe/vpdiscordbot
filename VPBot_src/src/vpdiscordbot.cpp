@@ -12,7 +12,7 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
-
+#include <boost/algorithm/string.hpp>
 
 using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
@@ -298,6 +298,9 @@ void event_chat(VPInstance sdk) {
     if (name.substr(0, 3) == std::string("[d-")) {
         return; // Ignore discord messages.
     }
+
+    // Let's escape the message.
+    boost::replace_all(message, "\"", "\\\"");
 
     ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"" << message << "\" }";
     cout << ss.str() << endl;
