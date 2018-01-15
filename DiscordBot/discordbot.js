@@ -12,6 +12,20 @@ let webhook = undefined;
 let mqueue = undefined; // Empty queue.
 
 const discord_config = JSON.parse(fs.readFileSync('../Configuration/bot-configuration.json', 'utf8')).discord;
+let av_list = JSON.parse(fs.readFileSync('../Configuration/avs-db.json', 'utf8'));
+
+function setNewAv(user, url) {
+    av_list.av[user] = url;
+    fs.writeFileSync('../Configuration/avs-db.json', JSON.stringify(av_list), 'utf8');
+}
+
+function getAv(user) {
+    if (av_list.av[user] == undefined) {
+        return "https://i.imgur.com/a2KuqGe.png";
+    } else {
+        return av_list.av[user];
+    }
+}
 
 async function getWebhook() {
     let hook_collection = await guild.fetchWebhooks();
@@ -168,10 +182,15 @@ wss.on('connection', function connection(ws) {
             console.log("!!!!!");
         }
 
+        // parse set av
+        if (msg_decoded.message.substr(0, 11) == ".setav http") {
+            setNewAv(msg_decoded.name, "http" + msg_decoded.message.substr(11));
+        }
+
         //lolno
         msg_decoded.message = msg_decoded.message.replace(/^\/me/, "");
         msg_decoded.message = msg_decoded.message.replace(/@[^ ]+/g, "");
-        mqueue.then(webhook => webhook.edit(msg_decoded.name, "https://i.imgur.com/a2KuqGe.png"))
+        mqueue.then(webhook => webhook.edit(msg_decoded.name, getAv(msg_decoded.name)))
               .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
     });
 });
