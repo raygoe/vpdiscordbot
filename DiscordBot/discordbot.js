@@ -9,6 +9,7 @@ let ws_client = undefined;
 let guild = undefined;
 let channel_id = undefined;
 let webhook = undefined;
+let mqueue = undefined; // Empty queue.
 
 const discord_config = JSON.parse(fs.readFileSync('../Configuration/bot-configuration.json', 'utf8')).discord;
 
@@ -23,8 +24,9 @@ async function getWebhook() {
 
     if (webhook != undefined) {
         channel_id = webhook.channelID;
-        console.log("Found webhook w/ ID: " + id);
+        console.log("Found webhook w/ ID: " + webhook.id);
         console.log("Found channel w/ ID: " + channel_id);
+        mqueue = Promise.resolve(webhook);
         return Promise.resolve(webhook);
     } else {
         console.log("Could not find webhook w/ ID: " + discord_config.webhook_id);
@@ -61,13 +63,62 @@ client.on('message', message => {
     console.log(message.content);
     let username = message.author.username;
     if (ws_client != undefined && !message.author.bot && channel_id == message.channel.id) {
-        if (message.content.length > 250) {
-            message.content = message.content.substring(0, 250);
+        // Let's format the message.
+
+        // First, let's extract message embeds.
+        for (var attach of message.attachments) {
+            if (message.content.length) {
+                message.content += " " + attach[1].url;
+            } else {
+                message.content += "" + attach[1].url;
+            }
         }
 
-        //lolno
-        message.content = message.content.replace(/@[^ ]+/g, "");
+        // match <@!?123> for users.
+        let result, regEx = /<@!?([0-9]+)>/g;
+        while (result = regEx.exec(message.content)) {
+            let id = result[1], id_match = result[0];
+            if (guild.members.get(id) != undefined) {
+                message.content = message.content.replace(id_match, "@" + guild.members.get(id).displayName);
+            } else {
+                message.content = message.content.replace(id_match, "@...");
+            }
+        }
+
+        // match <#123> for channels.
+        regEx = /<#([0-9]+)>/g;
+        while (result = regEx.exec(message.content)) {
+            let id = result[1], id_match = result[0];
+            if (guild.channels.get(id) != undefined) {
+                message.content = message.content.replace(id_match, "#" + guild.channels.get(id).name);
+            } else {
+                message.content = message.content.replace(id_match, "#deleted_channel");
+            }
+        }
+
+        // match <@&123> for roles.
+        regEx = /<@&([0-9]+)>/g;
+        while (result = regEx.exec(message.content)) {
+            let id = result[1], id_match = result[0];
+            if (guild.roles.get(id) != undefined) {
+                message.content = message.content.replace(id_match, "@" + guild.roles.get(id).name);
+            } else {
+                message.content = message.content.replace(id_match, "@unknown_role");
+            }
+        }
+
+        // match <:.*:123> for custom emoji.
+        regEx = /<:([^:]*):[0-9]+>/g;
+        while (result = regEx.exec(message.content)) {
+            let emoji = result[1], id_match = result[0];
+            message.content = message.content.replace(id_match, ":" + emoji + ":");
+        }
         username = "[d-" + username + "]";
+
+        // Trim the message for VP.
+        if (message.content.length > 253) {
+            message.content = message.content.substring(0, 253);
+        }
 
         let msg_to_send = { "name": username, "message": message.content };
         ws_client.send(JSON.stringify(msg_to_send));
@@ -113,12 +164,15 @@ wss.on('connection', function connection(ws) {
             console.log("Skipping bad mesg");
             return;
         }
+        if (mqueue == undefined) {
+            console.log("!!!!!");
+        }
 
         //lolno
+        msg_decoded.message = msg_decoded.message.replace(/^\/me/, "");
         msg_decoded.message = msg_decoded.message.replace(/@[^ ]+/g, "");
-        
-        webhook.edit(msg_decoded.name, "https://i.imgur.com/a2KuqGe.png")
-               .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
+        mqueue.then(webhook => webhook.edit(msg_decoded.name, "https://i.imgur.com/a2KuqGe.png"))
+              .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
     });
 });
 
