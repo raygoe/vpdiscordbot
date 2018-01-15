@@ -188,9 +188,10 @@ wss.on('connection', function connection(ws) {
         }
 
         //lolno
+        msg_decoded.av = getAv(msg_decoded.name);
         msg_decoded.message = msg_decoded.message.replace(/^\/me/, "");
         msg_decoded.message = msg_decoded.message.replace(/@[^ ]+/g, "");
-        mqueue.then(webhook => webhook.edit(msg_decoded.name, getAv(msg_decoded.name)))
+        mqueue.then(webhook => webhook.edit(msg_decoded.name, msg_decoded.av))
               .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
     });
 });
