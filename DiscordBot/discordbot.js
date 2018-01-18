@@ -191,8 +191,13 @@ wss.on('connection', function connection(ws) {
         msg_decoded.av = getAv(msg_decoded.name);
         msg_decoded.message = msg_decoded.message.replace(/^\/me/, "");
         msg_decoded.message = msg_decoded.message.replace(/@[^ ]+/g, "");
-        mqueue.then(webhook => webhook.edit(msg_decoded.name, msg_decoded.av))
-              .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
+
+        msg_decoded.re = new Discord.RichEmbed();
+        msg_decoded.re.setAuthor(msg_decoded.name, msg_decoded.av);
+        msg_decoded.re.setDescription(msg_decoded.message);
+
+        mqueue.then(webhook => webhook.edit("The Bridge", "https://i.imgur.com/a2KuqGe.png"))
+              .then(webhook => webhook.sendMessage("", {"embeds": [msg_decoded.re]})).catch(console.error);
     });
 });
 
