@@ -13,10 +13,16 @@ let mqueue = undefined; // Empty queue.
 
 const discord_config = JSON.parse(fs.readFileSync('../Configuration/bot-configuration.json', 'utf8')).discord;
 let av_list = JSON.parse(fs.readFileSync('../Configuration/avs-db.json', 'utf8'));
+let col_list = JSON.parse(fs.readFileSync('../Configuration/cols-db.json', 'utf8'));
 
 function setNewAv(user, url) {
     av_list.av[user] = url;
     fs.writeFileSync('../Configuration/avs-db.json', JSON.stringify(av_list), 'utf8');
+}
+
+function setNewCol(user, col) {
+    col_list.col[user] = col;
+    fs.writeFileSync('../Configuration/cols-db.json', JSON.stringify(col_list), 'utf8');
 }
 
 function getAv(user) {
@@ -24,6 +30,14 @@ function getAv(user) {
         return "https://i.imgur.com/a2KuqGe.png";
     } else {
         return av_list.av[user];
+    }
+}
+
+function getCol(user) {
+    if (col_list.col[user] == undefined) {
+        return "none";
+    } else {
+        return col_list.col[user];
     }
 }
 
@@ -189,14 +203,18 @@ wss.on('connection', function connection(ws) {
 
         //lolno
         msg_decoded.av = getAv(msg_decoded.name);
+        msg_decoded.col = getCol(msg_decoded.name);
         msg_decoded.message = msg_decoded.message.replace(/^\/me/, "");
         msg_decoded.message = msg_decoded.message.replace(/@[^ ]+/g, "");
 
         msg_decoded.re = new Discord.RichEmbed();
         msg_decoded.re.setAuthor(msg_decoded.name, msg_decoded.av);
         msg_decoded.re.setDescription(msg_decoded.message);
+        if (msg_decoded.col != "none") {
+            msg_decoded.re.setColor(msg_decoded.col);
+        }
 
-        mqueue.then(webhook => webhook.edit("The Bridge", "https://i.imgur.com/a2KuqGe.png"))
+        mqueue.then(webhook => webhook.edit("#Blizzard", "https://i.imgur.com/a2KuqGe.png"))
               .then(webhook => webhook.sendMessage("", {"embeds": [msg_decoded.re]})).catch(console.error);
     });
 });
