@@ -201,6 +201,10 @@ wss.on('connection', function connection(ws) {
             setNewAv(msg_decoded.name, "http" + msg_decoded.message.substr(11));
         }
 
+        if (msg_decoded.message.substr(0, 9) == ".setcol #") {
+            setNewCol(msg_decoded.name, "#" + msg_decoded.message.substr(9));
+        }
+
         //lolno
         msg_decoded.av = getAv(msg_decoded.name);
         msg_decoded.col = getCol(msg_decoded.name);
