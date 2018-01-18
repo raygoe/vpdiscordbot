@@ -274,7 +274,7 @@ void event_avatar_add(VPInstance sdk) {
     }
 
     stringstream ss;
-    ss << "{ \"name\" : \"" << name << "\", \"message\": \"**Has joined " << client->settings->bot.world << ".**\" }";
+    ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"**Has joined " << client->settings->bot.world << ".**\" }";
     cout << ss.str() << endl;
     write_message(ss.str());
 }
@@ -283,7 +283,7 @@ void event_avatar_delete(VPInstance sdk) {
     int session(vp_int(sdk, VP_AVATAR_SESSION));
     std::string name(vp_string(sdk, VP_AVATAR_NAME));
     stringstream ss;
-    ss << "{ \"name\" : \"" << name << "\", \"message\": \"**Has left " << client->settings->bot.world << ".**\" }";
+    ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"**Has left " << client->settings->bot.world << ".**\" }";
     cout << ss.str() << endl;
     write_message(ss.str());
     std::lock_guard<std::mutex> lock{liu_mtx};
