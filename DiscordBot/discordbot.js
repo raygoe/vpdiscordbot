@@ -43,7 +43,7 @@ async function getWebhook() {
         mqueue = Promise.resolve(webhook);
         return Promise.resolve(webhook);
     } else {
-        console.log("Could not find webhook w/ ID: " + discord_config.webhook_id);
+        console.log("Could not find webhook with ID: " + discord_config.webhook_id);
         process.exit(-1);
     }
 }
