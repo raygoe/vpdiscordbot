@@ -1,0 +1,6 @@
+#!/bin/sh
+
+echo "!!" >> /tmp/out
+
+pm2 restart vpdiscordbot
+pm2 restart discordbot

@@ -299,6 +299,14 @@ void event_chat(VPInstance sdk) {
         return; // Ignore discord messages.
     }
 
+    if (!name.length()) {
+        return; // Ignore console messages without names.
+    }
+
+    if (message[0] == '#' && message[1] == ' ') {
+        return; // ignore messages with "# ..."
+    }
+
     // Let's escape the message.
     boost::replace_all(message, "\"", "\\\"");
 

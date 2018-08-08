@@ -15,6 +15,51 @@ const discord_config = JSON.parse(fs.readFileSync('../Configuration/bot-configur
 let av_list = JSON.parse(fs.readFileSync('../Configuration/avs-db.json', 'utf8'));
 let col_list = JSON.parse(fs.readFileSync('../Configuration/cols-db.json', 'utf8'));
 
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+/**
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 255].
+ *
+ * @param   {number}  h       The hue
+ * @param   {number}  s       The saturation
+ * @param   {number}  l       The lightness
+ * @return  {Array}           The RGB representation
+ */
+function hslToRgb(h, s, l){
+    var r, g, b;
+
+    if(s == 0){
+        r = g = b = l; // achromatic
+    }else{
+        var hue2rgb = function hue2rgb(p, q, t){
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+
+    return rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
+}
+
 function setNewAv(user, url) {
     av_list.av[user] = url;
     fs.writeFileSync('../Configuration/avs-db.json', JSON.stringify(av_list), 'utf8');
@@ -35,7 +80,8 @@ function getAv(user) {
 
 function getCol(user) {
     if (col_list.col[user] == undefined) {
-        return "none";
+        setNewCol(user, hslToRgb(Math.random(), 1, 0.5));
+        return col_list.col[user];
     } else {
         return col_list.col[user];
     }
@@ -214,12 +260,13 @@ wss.on('connection', function connection(ws) {
         msg_decoded.re = new Discord.RichEmbed();
         msg_decoded.re.setAuthor(msg_decoded.name, msg_decoded.av);
         msg_decoded.re.setDescription(msg_decoded.message);
+
         if (msg_decoded.col != "none") {
             msg_decoded.re.setColor(msg_decoded.col);
         }
 
-        mqueue.then(webhook => webhook.edit("#Blizzard", "https://i.imgur.com/a2KuqGe.png"))
-              .then(webhook => webhook.sendMessage("", {"embeds": [msg_decoded.re]})).catch(console.error);
+        mqueue.then(webhook => webhook.edit(msg_decoded.name, msg_decoded.av))
+              .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
     });
 });
 
