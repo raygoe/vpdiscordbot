@@ -136,8 +136,11 @@ client.on('ready', () => {
 client.on('message', message => {
     console.log(message.content);
     let username = message.author.username;
-    if (ws_client != undefined && !message.author.bot && channel_id == message.channel.id) {
+    if (ws_client != undefined && !message.author.bot && (channel_id == message.channel.id || message.guild === null)) {
         // Let's format the message.
+        if (message.guild === null) {
+            message.content = "<:PRIV:TAG:>" + message.content;
+        }
 
         // First, let's extract message embeds.
         for (var attach of message.attachments) {
@@ -286,3 +289,4 @@ const interval = setInterval(() => {
         console.log("[WS] -PING. :: " + ws.isAlive);
     });
 }, 30000);
+

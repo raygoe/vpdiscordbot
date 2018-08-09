@@ -6,6 +6,9 @@
 #include <atomic>
 #include <string>
 #include <unordered_map>
+#include <list>
+#include <algorithm>
+#include <string>
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -39,6 +42,10 @@ system_clock::time_point started;
 
 std::mutex liu_mtx;
 std::unordered_map<int, std::string> logged_in_users;
+std::unordered_map<std::string, std::list<int>> user_to_session_list;
+
+static int find_first_space(std::string str);
+static void to_upper_case(std::string & str);
 
 
 struct websocket_client {
@@ -245,7 +252,32 @@ int main(int argc, char ** argv) {
         std::lock_guard<std::mutex> lock{ websocket.read_mtx };
 
         for (auto message : websocket.messages_to_send) {
-            vp_console_message(sdk, 0, message.name.c_str(), message.message.c_str(), 0, 0, 0, 0);
+            if (message.message.substr(0, 13) == "<:PRIV:TAG:>@") {
+                // Private message.
+                std::stringstream ss;
+                ss << "(whisper from: " << message.name << ")";
+
+                int len = find_first_space(message.message.substr(13));
+                if (len < 0) {
+                    continue; // skip!
+                }
+
+                std::string dest_name = message.message.substr(13, len);
+                to_upper_case(dest_name);
+                std::string new_msg = message.message.substr(13 + len + 1);
+                auto session_list = user_to_session_list.find(dest_name.c_str());
+                if (session_list == user_to_session_list.end()) {
+                    continue; // skip!
+                }
+                else {
+                    for (int session : session_list->second) {
+                        vp_console_message(sdk, session, ss.str().c_str(), new_msg.c_str(), VP_TEXT_EFFECT_ITALIC, 0, 0, 200);
+                    }
+                }
+            }
+            else {
+                vp_console_message(sdk, 0, message.name.c_str(), message.message.c_str(), 0, 0, 0, 0);
+            }
         }
         websocket.messages_to_send.clear();
     }
@@ -263,6 +295,16 @@ void event_avatar_add(VPInstance sdk) {
 
     std::lock_guard<std::mutex> lock{liu_mtx};
     logged_in_users[session] = name;
+
+    auto session_name = std::string(name);
+    to_upper_case(session_name);
+    auto session_list = user_to_session_list.find(session_name.c_str());
+    if (session_list != user_to_session_list.end()) {
+        session_list->second.push_back(session);
+    }
+    else {
+        user_to_session_list[session_name.c_str()] = std::list<int>{session};
+    }
 
 
     if (!is_steady && duration_cast<seconds>(system_clock::now() - started).count() > 5) {
@@ -288,6 +330,16 @@ void event_avatar_delete(VPInstance sdk) {
     write_message(ss.str());
     std::lock_guard<std::mutex> lock{liu_mtx};
     logged_in_users.erase(session);
+    auto session_name = std::string(name);
+    to_upper_case(session_name);
+    auto session_list = user_to_session_list[session_name.c_str()];
+    session_list.erase(
+        std::remove_if(
+            session_list.begin(),
+            session_list.end(),
+            [&](int s) {return s == session; }
+        ), session_list.end()
+    );
 }
 
 void event_chat(VPInstance sdk) {
@@ -297,6 +349,10 @@ void event_chat(VPInstance sdk) {
 
     if (name.substr(0, 3) == std::string("[d-")) {
         return; // Ignore discord messages.
+    }
+
+    if (name.substr(0, 8) == "Services") {
+        return; // Ignore services messages.
     }
 
     if (!name.length()) {
@@ -313,4 +369,21 @@ void event_chat(VPInstance sdk) {
     ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"" << message << "\" }";
     cout << ss.str() << endl;
     write_message(ss.str());
+}
+
+int find_first_space(std::string str) {
+    int ret = 0;
+    for (auto c : str) {
+        if (c == ' ') {
+            return ret;
+        }
+        else {
+            ++ret;
+        }
+    }
+    return -1;
+}
+
+void to_upper_case(std::string & str) {
+    for (auto & c : str) c = toupper((unsigned char)c);
 }
