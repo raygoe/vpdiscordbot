@@ -310,7 +310,7 @@ void event_avatar_add(VPInstance sdk) {
     if (!is_steady && duration_cast<seconds>(system_clock::now() - started).count() > 5) {
         cout << "Now Steady." << endl;
         is_steady = true;
-    } else if (!is_steady) {
+    } else if (!is_steady || name.substr(0, 4) == "[irc") {
         cout << "User Joined: " << name << endl;
         return;
     }
@@ -318,7 +318,7 @@ void event_avatar_add(VPInstance sdk) {
     stringstream ss;
     ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"**Has joined " << client->settings->bot.world << ".**\" }";
     cout << ss.str() << endl;
-    write_message(ss.str());
+    //write_message(ss.str()); // We aren't going to display join receipts anymore.
 }
 
 void event_avatar_delete(VPInstance sdk) {
@@ -327,7 +327,11 @@ void event_avatar_delete(VPInstance sdk) {
     stringstream ss;
     ss << "{ \"name\" : \"vp-" << name << "\", \"message\": \"**Has left " << client->settings->bot.world << ".**\" }";
     cout << ss.str() << endl;
-    write_message(ss.str());
+
+    /*if (name.substr(0, 4) != "[irc")
+	    write_message(ss.str()); // We aren't going to display leave receipts anymore.
+     */
+
     std::lock_guard<std::mutex> lock{liu_mtx};
     logged_in_users.erase(session);
     auto session_name = std::string(name);
@@ -357,6 +361,22 @@ void event_chat(VPInstance sdk) {
 
     if (!name.length()) {
         return; // Ignore console messages without names.
+    }
+
+    std::string::size_type n;
+    n = message.find("greets fellow bot");
+    if (n != std::string::npos && name.substr(0, 1) == "[") {
+        return; // Filter out Xelagot's silly botgram.
+    }
+
+    n = message.find(" has entered ");
+    if (n != std::string::npos && name.substr(0, 5) == "[irc-") {
+        return; // Filter out Services' receipts.
+    }
+
+    n = message.find(" has left ");
+    if (n != std::string::npos && name.substr(0, 5) == "[irc-") {
+        return; // Filter out Services' receipts.
     }
 
     if (message[0] == '#' && message[1] == ' ') {

@@ -199,6 +199,11 @@ client.on('message', message => {
 
         let msg_to_send = { "name": username, "message": message.content };
         ws_client.send(JSON.stringify(msg_to_send));
+
+        // Oh, and lets delete it if it says "!online".
+        if (message.content.substr(0, 7) == "!online") {
+            message.delete(1000);
+        }
     }
 });
 
@@ -254,6 +259,13 @@ wss.on('connection', function connection(ws) {
             setNewCol(msg_decoded.name, "#" + msg_decoded.message.substr(9));
         }
 
+        if (msg_decoded.name == "The Bridge") {
+            // We want to delete this message after about 30 seconds.
+            msg_decoded.delete_me = true;
+        } else {
+            msg_decoded.delete_me = false;
+        }
+
         //lolno
         msg_decoded.av = getAv(msg_decoded.name);
         msg_decoded.col = getCol(msg_decoded.name);
@@ -269,7 +281,13 @@ wss.on('connection', function connection(ws) {
         }
 
         mqueue.then(webhook => webhook.edit(msg_decoded.name, msg_decoded.av))
-              .then(webhook => webhook.sendMessage(msg_decoded.message)).catch(console.error);
+              .then(webhook => {
+                  webhook.sendMessage(msg_decoded.message).then(message => {
+                      if (msg_decoded.delete_me) {
+                          guild.channels.get(channel_id).fetchMessage(message.id).then(message => message.delete(10000));
+                      }
+                  })
+            }).catch(console.error);
     });
 });
 
