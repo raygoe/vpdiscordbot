@@ -16,7 +16,7 @@
   "author": "Barrel Zone",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^11.2.1",
+    "discord.js": "^11.4.2",
     "ws": "^4.0.0"
   }
 }

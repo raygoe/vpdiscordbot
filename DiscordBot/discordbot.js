@@ -113,7 +113,16 @@ let avatar = "";
 client.on('ready', () => {
     console.log('Connected to Discord API... :o');
     console.log('Searching for guild id: ' + discord_config.guild_id);
-    
+
+    client.user.setPresence({
+        game: {
+            name: 'Blizzard Chat!',
+            url: 'https://github.com/raygoe/vpdiscordbot',
+            type: "LISTENING"
+        },
+        status: 'online'
+    });
+ 
     let guildList = client.guilds.array();
 
     guildList.forEach( g => {
@@ -295,7 +304,7 @@ const interval = setInterval(() => {
     wss.clients.forEach(ws => {
         console.log("[WS] +PING. :: " + ws.isAlive);
         if (ws.isAlive === false) {
-            // Now to terminate them.
+            // Now to terminate them
             console.log("Lost connection to C++ API...!");
             client.destroy();
             client = new Discord.Client();

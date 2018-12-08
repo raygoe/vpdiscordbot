@@ -379,8 +379,12 @@ void event_chat(VPInstance sdk) {
         return; // Filter out Services' receipts.
     }
 
-    if (message[0] == '#' && message[1] == ' ') {
-        return; // ignore messages with "# ..."
+    if (name == "[Lord Chamberlain]") {
+        return; // Filter out Lord Chamberlain
+    }
+
+    if (message.length() >= 2 && ((message[0] == '!' && message[1] != '!') || (message[0] == '#' && message[1] == ' ')) || (message[0] == '/' && message[1] != '/')) {
+        return; // ignore messages with "# ..." or "!..." or "/..."
     }
 
     // Let's escape the message.
