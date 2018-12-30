@@ -1,0 +1,22 @@
+{
+  "name": "vpdiscordbot",
+  "version": "1.0.0",
+  "description": "VP Chat Relay Bot (Discord Bot)",
+  "main": "discordbot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raygoe/vpdiscordbot.git"
+  },
+  "keywords": [
+    "game"
+  ],
+  "author": "Barrel Zone",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/raygoe/vpdiscordbot/issues"
+  },
+  "homepage": "https://github.com/raygoe/vpdiscordbot#readme"
+}
