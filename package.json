@@ -18,5 +18,12 @@
   "bugs": {
     "url": "https://github.com/raygoe/vpdiscordbot/issues"
   },
-  "homepage": "https://github.com/raygoe/vpdiscordbot#readme"
+  "homepage": "https://github.com/raygoe/vpdiscordbot#readme",
+  "dependencies": {
+    "@discordjs/uws": "^11.149.1",
+    "discord.js": "^11.4.2",
+    "erlpack": "github:discordapp/erlpack",
+    "node-vpsdk": "^0.2.1",
+    "zlib-sync": "^0.1.4"
+  }
 }
